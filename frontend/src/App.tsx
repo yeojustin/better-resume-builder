@@ -3,11 +3,9 @@ import { useStore } from './store/useStore';
 import { Sidebar } from './components/Sidebar';
 import { Workspace } from './components/Workspace';
 import { SessionGeminiKeyPanel } from './components/SessionGeminiKeyPanel';
+import { GeminiKeyGateModal } from './components/GeminiKeyGateModal';
+import { hideSessionGeminiUi } from './buildFlags';
 import { AlertTriangle, FileText, Moon, Sun, X } from 'lucide-react';
-
-const hideSessionGeminiUi =
-  import.meta.env.VITE_HIDE_SESSION_GEMINI_UI === 'true' ||
-  import.meta.env.VITE_HIDE_SESSION_GEMINI_UI === '1';
 
 export default function App() {
   const { errorMessage, clearError, theme, toggleTheme } = useStore();
@@ -51,6 +49,8 @@ export default function App() {
       </div>
 
       {/* Toast notification */}
+      <GeminiKeyGateModal />
+
       {errorMessage && (
         <div className="no-print fixed bottom-5 left-1/2 z-[9999] w-[min(100%-2rem,26rem)] -translate-x-1/2">
           <div className="flex items-start gap-3 rounded-lg bg-[#111] px-4 py-3 shadow-xl ring-1 ring-black/10">

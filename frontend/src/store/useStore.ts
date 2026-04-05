@@ -1,7 +1,11 @@
 import { create } from 'zustand';
-import axios from 'axios';
+import axios, { type InternalAxiosRequestConfig } from 'axios';
 
-export const API_BASE_URL = 'http://localhost:8000';
+const rawApiBase = import.meta.env.VITE_API_BASE_URL;
+export const API_BASE_URL =
+  typeof rawApiBase === 'string' && rawApiBase.trim() !== ''
+    ? rawApiBase.trim().replace(/\/$/, '')
+    : 'http://localhost:8000';
 
 /** Tab session only — never localStorage. Value is sent as `X-Gemini-Api-Key` on Gemini calls. */
 export const SESSION_GEMINI_STORAGE_KEY = 'brb_session_gemini_key';
@@ -16,13 +20,26 @@ export function readSessionGeminiKey(): string | null {
   }
 }
 
-axios.interceptors.request.use((config) => {
+/** Mutate config headers in place — never replace the whole object (that drops Content-Type for JSON/FormData). */
+function applySessionGeminiHeader(config: InternalAxiosRequestConfig) {
   const k = readSessionGeminiKey();
+  const h = config.headers;
+  if (!h) return;
   if (k) {
-    const headers = (config.headers ?? {}) as Record<string, string>;
-    headers['X-Gemini-Api-Key'] = k;
-    config.headers = headers as typeof config.headers;
+    if (typeof (h as { set?: (a: string, b: string) => void }).set === 'function') {
+      (h as { set: (a: string, b: string) => void }).set('X-Gemini-Api-Key', k);
+    } else {
+      (h as Record<string, string>)['X-Gemini-Api-Key'] = k;
+    }
+  } else if (typeof (h as { delete?: (a: string) => void }).delete === 'function') {
+    (h as { delete: (a: string) => void }).delete('X-Gemini-Api-Key');
+  } else {
+    delete (h as Record<string, string>)['X-Gemini-Api-Key'];
   }
+}
+
+axios.interceptors.request.use((config) => {
+  applySessionGeminiHeader(config);
   return config;
 });
 

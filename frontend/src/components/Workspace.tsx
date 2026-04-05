@@ -39,7 +39,7 @@ export const Workspace = () => {
   const activeProject = projects.find((p) => p.id === activeProjectId);
   const isLg = useMediaQuery('(min-width: 1024px)');
   const az = activeProject?.analyzeSettings ?? DEFAULT_ANALYZE_SETTINGS;
-  const [jdBuffer, setJDBuffer] = useState(activeProject?.jd || '');
+  const jdBuffer = activeProject?.jd || '';
   const [leftPanePercent, setLeftPanePercent] = useState(readStoredLeftPct);
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef(false);
@@ -85,17 +85,8 @@ export const Workspace = () => {
     };
   }, [isLg]);
 
-  useEffect(() => {
-    if (activeProject) {
-      setJDBuffer(activeProject.jd || '');
-    }
-  }, [activeProjectId, activeProject?.jd]);
-
   const handleJDChange = (val: string) => {
-    setJDBuffer(val);
-    if (activeProjectId) {
-      setProjectJD(activeProjectId, val);
-    }
+    if (activeProjectId) setProjectJD(activeProjectId, val);
   };
 
   const busy = inFlight !== null;

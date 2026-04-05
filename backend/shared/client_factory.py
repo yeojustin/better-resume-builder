@@ -25,4 +25,10 @@ def get_gemini_client(api_key: str | None = None) -> genai.Client:
     else:
         override = (api_key or "").strip()
     resolved = override or (settings.GOOGLE_API_KEY or "").strip()
+    if not resolved:
+        raise ValueError(
+            "No Gemini API key: use **Add Gemini key** in the app (this tab) or pass "
+            "X-Gemini-Api-Key, or set GEMINI_SESSION_ONLY=false and configure "
+            "GEMINI_API_KEY / GOOGLE_API_KEY for a server-side key."
+        )
     return genai.Client(api_key=resolved)

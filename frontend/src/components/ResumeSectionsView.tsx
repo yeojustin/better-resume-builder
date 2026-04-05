@@ -1,15 +1,5 @@
-import { LayoutList, User } from 'lucide-react';
+import { LayoutList } from 'lucide-react';
 import type { ResumeOutline } from '../store/useStore';
-
-const PI_LABELS: { key: string; label: string }[] = [
-  { key: 'name', label: 'Name' },
-  { key: 'email', label: 'Email' },
-  { key: 'phone', label: 'Phone' },
-  { key: 'location', label: 'Location' },
-  { key: 'linkedin', label: 'LinkedIn' },
-  { key: 'portfolio', label: 'Portfolio' },
-  { key: 'summary', label: 'Summary' },
-];
 
 export function ResumeSectionsView({ outline }: { outline: ResumeOutline | undefined }) {
   if (!outline) {
@@ -22,27 +12,6 @@ export function ResumeSectionsView({ outline }: { outline: ResumeOutline | undef
 
   return (
     <div className="space-y-4">
-      <div>
-        <div className="mb-2 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-[#c0c4cd]">
-          <User size={11} />
-          Contact & summary
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {PI_LABELS.map(({ key, label }) => (
-            <span
-              key={key}
-              className={
-                outline.personalInfoPresent[key]
-                  ? 'rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-semibold text-emerald-800 ring-1 ring-emerald-200'
-                  : 'rounded-full bg-[#f3f4f6] px-2 py-0.5 text-[9px] font-medium text-[#9ca3af] ring-1 ring-[#e5e7eb]'
-              }
-            >
-              {label}
-            </span>
-          ))}
-        </div>
-      </div>
-
       <div>
         <div className="mb-2 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-[#c0c4cd]">
           <LayoutList size={11} />

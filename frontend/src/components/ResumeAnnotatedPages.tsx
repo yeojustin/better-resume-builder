@@ -17,68 +17,9 @@ function estBulletH(text: string) {
   return estLines(text, 64) * 15 + 6;
 }
 
-const PI_ORDER: [string, string][] = [
-  ['Name', 'name'],
-  ['Email', 'email'],
-  ['Phone', 'phone'],
-  ['Location', 'location'],
-  ['LinkedIn', 'linkedin'],
-  ['Portfolio', 'portfolio'],
-];
-
 function buildSegments(content: unknown, lineEdits: LineEdit[]): Seg[] {
   const segs: Seg[] = [];
   const c = content as { personalInfo?: Record<string, unknown>; sections?: unknown[] } | null;
-  const pi = c?.personalInfo && typeof c.personalInfo === 'object' ? c.personalInfo : {};
-
-  const piRows: { label: string; val: string }[] = [];
-  for (const [label, key] of PI_ORDER) {
-    const v = pi[key];
-    if (typeof v === 'string' && v.trim()) {
-      piRows.push({ label, val: v.trim() });
-    }
-  }
-
-  const summary = typeof pi.summary === 'string' ? pi.summary.trim() : '';
-
-  if (piRows.length || summary) {
-    segs.push({
-      key: 'h-contact',
-      est: 28,
-      node: (
-        <h2 className="text-sm font-bold uppercase tracking-wide text-[#111]">Contact & summary</h2>
-      ),
-    });
-    for (const row of piRows) {
-      const h = estLines(`${row.label}: ${row.val}`, 55) * 14 + 8;
-      segs.push({
-        key: `pi-${row.label}`,
-        est: h,
-        node: (
-          <div className="text-[11px] leading-snug text-[#111]">
-            <span className="font-semibold text-[#6b7280]">{row.label}: </span>
-            <SuggestionHighlights text={row.val} lineEdits={lineEdits} />
-          </div>
-        ),
-      });
-    }
-    if (summary) {
-      segs.push({
-        key: 'sum-h',
-        est: 20,
-        node: <p className="text-[10px] font-semibold uppercase text-[#6b7280]">Summary</p>,
-      });
-      segs.push({
-        key: 'sum-b',
-        est: estBulletH(summary) + 12,
-        node: (
-          <p className="text-[11px] leading-relaxed text-[#111]">
-            <SuggestionHighlights text={summary} lineEdits={lineEdits} />
-          </p>
-        ),
-      });
-    }
-  }
 
   const sections = Array.isArray(c?.sections) ? c.sections : [];
   sections.forEach((sec: unknown, si: number) => {

@@ -1,13 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { KeyRound, ChevronDown, ChevronUp } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { KeyRound, ChevronDown, ChevronUp, Copy, Pencil } from 'lucide-react';
+import { readSessionGeminiKey, useStore } from '../store/useStore';
 
 export function SessionGeminiKeyPanel() {
   const hasSessionGeminiKey = useStore((s) => s.hasSessionGeminiKey);
   const setSessionGeminiApiKey = useStore((s) => s.setSessionGeminiApiKey);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
+  const [copied, setCopied] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -18,8 +24,20 @@ export function SessionGeminiKeyPanel() {
     return () => document.removeEventListener('mousedown', onDoc);
   }, [open]);
 
+  const copyKey = async () => {
+    const k = readSessionGeminiKey();
+    if (!k) return;
+    try {
+      await navigator.clipboard.writeText(k);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* ignore */
+    }
+  };
+
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="group relative flex items-center gap-0.5">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -33,6 +51,35 @@ export function SessionGeminiKeyPanel() {
         </span>
         {open ? <ChevronUp size={14} className="shrink-0 opacity-60" /> : <ChevronDown size={14} className="shrink-0 opacity-60" />}
       </button>
+
+      {hasSessionGeminiKey ? (
+        <div className="pointer-events-none flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 max-sm:hidden">
+          <button
+            type="button"
+            title={copied ? 'Copied' : 'Copy API key'}
+            onClick={(e) => {
+              e.stopPropagation();
+              void copyKey();
+            }}
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-amber-200/80 bg-white text-amber-900 shadow-sm hover:bg-amber-50 dark:border-amber-800 dark:bg-zinc-900 dark:text-amber-100 dark:hover:bg-amber-950/60"
+            aria-label="Copy API key"
+          >
+            <Copy size={13} />
+          </button>
+          <button
+            type="button"
+            title="Change API key"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(true);
+            }}
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-amber-200/80 bg-white text-amber-900 shadow-sm hover:bg-amber-50 dark:border-amber-800 dark:bg-zinc-900 dark:text-amber-100 dark:hover:bg-amber-950/60"
+            aria-label="Change API key"
+          >
+            <Pencil size={13} />
+          </button>
+        </div>
+      ) : null}
 
       {open ? (
         <div
@@ -52,6 +99,7 @@ export function SessionGeminiKeyPanel() {
 
           <label className="mt-3 block text-[10px] font-medium text-zinc-600 dark:text-zinc-400">Google AI (Gemini) API key</label>
           <input
+            ref={inputRef}
             type="password"
             autoComplete="off"
             value={draft}

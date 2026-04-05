@@ -44,8 +44,10 @@ Example fragments live under `kubernetes/` (adjust image registry and namespaces
 
 ## Frontend (production build)
 
-Point the SPA at the gateway URL. To hide the “Add Gemini key” UI when the API never accepts client keys:
+Set the API origin the browser will call (defaults to `http://localhost:8000` if unset). To hide the “Add Gemini key” UI when the API never accepts client keys (`DISABLE_CLIENT_GEMINI_KEY_HEADER=true` on the server):
 
 ```bash
-VITE_HIDE_SESSION_GEMINI_UI=true npm run build
+VITE_API_BASE_URL=https://api.yourdomain.com VITE_HIDE_SESSION_GEMINI_UI=true npm run build
 ```
+
+Match `ALLOWED_ORIGINS` on the backend to your SPA origin (comma-separated) so CORS allows the browser.

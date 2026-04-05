@@ -2,41 +2,23 @@
 
 Parse a CV and a job description into structured JSON, run **match analysis** (ML keyword overlap + **LLM** fit + optional TF–IDF reference), and get **line-level edit suggestions** grounded in your resume. Optionally **tailor** the full resume JSON via `POST /optimize-cv`.
 
-## Features
-
-### Backend
-
-- **Resume ingestion**: PDF/Word → structured JSON plus a **section outline** (counts, contact flags).
-- **JD ingestion**: Paste (`POST /parse-jd-text`) or file (`POST /parse-jd`) → structured JD JSON + flattened text for matching.
-- **Analysis** (`POST /analyze-resume`):
-  - **LLM** returns `jd_keywords` and `resume_keywords` (extracted from the JD text and the structured resume), plus section rankings, line edits, and `fit_score_llm`.
-  - **ML score** (`ml_metrics.ml_score_percent`): deterministic overlap on those keyword sets (Jaccard + JD recall blend, slightly conservative weights). If both lists are empty, it falls back to the legacy TF–IDF / token headline. The server applies a **strict reporting curve** to ML, LLM fit, section relevance, and the combined headline so scores are harder to “inflate.”
-  - **Combined headline**: `round(0.5 × strict(ML) + 0.5 × strict(LLM fit))`.
-  - **Lexical reference** (`lexical_metrics`): TF–IDF cosine, unigram Jaccard, matched/missing tokens — still returned for debugging and the UI “raw stats” panel.
-  - Tunable request fields: **groundedness**, **creativity**, **temperature**, **professionalism** (see OpenAPI `/docs`).
-- **Tailor (optional)**: `POST /optimize-cv` returns a rewritten `tailored_cv` + legacy ATS-style analytics.
-
-### Frontend
-
-- **Workspace**: Resizable **job / match** vs **What to change** split (default ~30/70; persisted in `localStorage`). Layout stacks on small screens; split drag only on large breakpoints.
-- **Match summary**: **Combined**, **ML**, and **LLM** scores with green / amber / red bands; keyword chips from ML lists when present; by-section Lex (TF–IDF per section) + LLM + combined; raw TF–IDF stats in a collapsible section.
-- **What to change**: Paginated **annotated preview** (highlights on suggested “before” text), optional **original PDF** tab when the upload was PDF, **Export PDF** of preview pages; suggestions grouped by resume entry with full entry text.
-- **Dark / light** theme (toggle in header; persisted).
-- **Monaco** JSON editor under **Raw resume data**; theme follows app light/dark.
-
 ## Tech stack
 
-- **Frontend**: React, Vite, Tailwind v4, Zustand, Monaco, `react-pdf` / pdf.js, html2canvas + jsPDF for export.
+- **Frontend**: React, Vite, Tailwind v4, Zustand, Monaco, `react-pdf` / pdf.js, html2canvas + jsPDF.
 - **Backend**: FastAPI, Google GenAI (Gemini), scikit-learn (TF–IDF).
 
-## Branches
+---
 
-- **`development`**: local workflow with optional **`.env`** at the repo root or under `backend/` (`APP_ENV` defaults to development so dotenv loading is on). The UI can still send **`X-Gemini-Api-Key`** unless the server sets **`DISABLE_CLIENT_GEMINI_KEY_HEADER=true`**.
-- **`deployment`**: production-oriented layout: **`APP_ENV=production`** so the app **does not read `.env` files** — inject **`GEMINI_API_KEY`** / **`GOOGLE_API_KEY`** via your host (Docker/Kubernetes/PaaS secrets). Prefer **`DISABLE_CLIENT_GEMINI_KEY_HEADER=true`** and build the frontend with **`VITE_HIDE_SESSION_GEMINI_UI=true`** to hide the session-key panel. See **`backend/deploy/README.md`** (Compose + Kubernetes templates).
+## Run locally
 
-## Local development
+### Prerequisites
 
-**1. Gateway (all routes, single process)**
+- **Python 3.12+** (recommended) and **Node.js 20+**
+- A **Google AI (Gemini) API key** ([Google AI Studio](https://aistudio.google.com/apikey))
+
+### 1. Backend API (gateway)
+
+From the repo root:
 
 ```bash
 cd backend
@@ -44,7 +26,12 @@ pip install -r requirements.txt
 PYTHONPATH=. uvicorn gateway.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-**2. Frontend**
+- API: [http://127.0.0.1:8000](http://127.0.0.1:8000) — OpenAPI docs at `/docs`.
+- Default mode is **`GATEWAY_MODE=embedded`** (all routes in one process).
+
+### 2. Frontend
+
+In another terminal:
 
 ```bash
 cd frontend
@@ -52,35 +39,90 @@ npm install
 npm run dev
 ```
 
-Point the UI at the API: `frontend` defaults to `http://localhost:8000` (`API_BASE_URL` in `src/store/useStore.ts`).
+- App: [http://127.0.0.1:5173](http://127.0.0.1:5173) (Vite default).
 
-**3. Environment**
+### 3. Gemini API key (local)
 
-Set `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) in `.env` at the repo root or under `backend/`.
+**Default (session key):** On first load, the app asks for your key. It is stored in the tab’s **session storage** and sent as **`X-Gemini-Api-Key`** on each request. In development, the backend normally **does not** use `GEMINI_API_KEY` / `GOOGLE_API_KEY` from `.env` so your session key is the source of truth.
 
-**Optional — your key for this tab only (UI)**
+- To use **`.env` / shell** keys for Gemini instead: set **`GEMINI_SESSION_ONLY=false`** before starting the backend (optional `.env` at repo root or `backend/` as in older workflows).
 
-In the app header, **Add Gemini key** stores a key in the browser’s **session storage** (not `localStorage`, not the server disk). Each request can send it as the header **`X-Gemini-Api-Key`**; the gateway uses it for that Gemini call instead of the server `.env` key. Closing the tab clears it. The backend does not persist this header.
-
-## Microservices and gateway
-
-Each domain has its own FastAPI app. **Local default**: `GATEWAY_MODE=embedded` — `gateway.main` loads all routers in one process.
-
-| Service        | Module                      | Example port |
-|----------------|-----------------------------|--------------|
-| Resume ingest  | `services.ingestion.app`    | 8001         |
-| JD ingest      | `services.jd.app`           | 8002         |
-| Analysis       | `services.analysis.app`     | 8003         |
-| CV tailor      | `services.optimization.app` | 8004         |
-
-**Split deploy**: set `GATEWAY_MODE=proxy` and `INGESTION_SERVICE_URL`, `JD_SERVICE_URL`, `ANALYSIS_SERVICE_URL`, `OPTIMIZATION_SERVICE_URL` to the upstream base URLs. Docker Compose and Kubernetes examples live under **`backend/deploy/`**.
-
-Run workers locally (from `backend/` with `PYTHONPATH=.`):
+**Optional — point the UI at a different API host** (e.g. remote backend):
 
 ```bash
+VITE_API_BASE_URL=https://your-api-host.example.com npm run dev
+```
+
+If unset, the client defaults to **`http://localhost:8000`**.
+
+---
+
+## Deploy (production)
+
+### Backend
+
+- Set **`APP_ENV=production`** so the app **does not** read repository `.env` files; inject secrets via your platform (Docker/Kubernetes/PaaS).
+- Provide **`GEMINI_API_KEY`** or **`GOOGLE_API_KEY`** in the container/process environment.
+- Set **`DISABLE_CLIENT_GEMINI_KEY_HEADER=true`** so browsers cannot override the server key with a header (recommended).
+- Set **`ALLOWED_ORIGINS`** to a comma-separated list of your **frontend origins** for CORS (or leave empty only if you accept the default CORS behavior documented in `backend/shared/cors.py`).
+
+**Docker (single container, embedded gateway)** — from `backend/deploy/`:
+
+```bash
+export GEMINI_API_KEY="your-key"
+docker compose -f docker-compose.monolith.yml up --build
+```
+
+Build context and full variable list: **`backend/deploy/README.md`**. The image build uses **`backend/.dockerignore`** so `.env` files are not copied into the image.
+
+**Microservices + proxy gateway** — see `docker-compose.microservices.yml` and the same deploy README.
+
+### Frontend (production build)
+
+Build a static bundle and host it (S3+CloudFront, nginx, Vercel, etc.). You must set the **public API URL** and hide session-key UI when the API rejects client keys:
+
+```bash
+cd frontend
+VITE_API_BASE_URL=https://api.yourdomain.com \
+VITE_HIDE_SESSION_GEMINI_UI=true \
+npm run build
+```
+
+Output is under **`frontend/dist/`**. Serve `index.html` and assets; configure your CDN or reverse proxy so the browser can call `VITE_API_BASE_URL` with CORS allowed by the backend.
+
+---
+
+## Features (overview)
+
+### Backend
+
+- Resume ingestion (PDF/Word → JSON + outline), JD ingestion (paste or file), **`POST /analyze-resume`** (LLM + ML + lexical reference), optional **`POST /optimize-cv`**.
+
+### Frontend
+
+- Job vs “What to change” workspace, match summary, annotated preview + PDF export, dark/light theme, Monaco JSON editor for raw resume data.
+
+---
+
+## Branches
+
+- **`development`** — day-to-day feature work.
+- **`deployment`** — release line aligned with production env (no runtime `.env` in containers, secrets from the host). This README describes how to run and ship that layout.
+
+---
+
+## Microservices (advanced)
+
+Each domain has its own FastAPI app. Local default: **`GATEWAY_MODE=embedded`**. For split processes, set **`GATEWAY_MODE=proxy`** and `INGESTION_SERVICE_URL`, `JD_SERVICE_URL`, `ANALYSIS_SERVICE_URL`, `OPTIMIZATION_SERVICE_URL`. Example local commands and ports are in **`backend/deploy/README.md`**.
+
+```bash
+# Example: workers + proxy gateway (from backend/, PYTHONPATH=.)
 PYTHONPATH=. uvicorn services.ingestion.app:app --port 8001
-PYTHONPATH=. uvicorn services.jd.app:app --port 8002
-PYTHONPATH=. uvicorn services.analysis.app:app --port 8003
-PYTHONPATH=. uvicorn services.optimization.app:app --port 8004
-GATEWAY_MODE=proxy INGESTION_SERVICE_URL=http://127.0.0.1:8001 JD_SERVICE_URL=http://127.0.0.1:8002 ANALYSIS_SERVICE_URL=http://127.0.0.1:8003 OPTIMIZATION_SERVICE_URL=http://127.0.0.1:8004 PYTHONPATH=. uvicorn gateway.main:app --port 8000
+# … jd 8002, analysis 8003, optimization 8004 …
+GATEWAY_MODE=proxy \
+  INGESTION_SERVICE_URL=http://127.0.0.1:8001 \
+  JD_SERVICE_URL=http://127.0.0.1:8002 \
+  ANALYSIS_SERVICE_URL=http://127.0.0.1:8003 \
+  OPTIMIZATION_SERVICE_URL=http://127.0.0.1:8004 \
+  PYTHONPATH=. uvicorn gateway.main:app --port 8000
 ```
