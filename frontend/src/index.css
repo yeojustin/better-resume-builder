@@ -1,0 +1,61 @@
+@import "tailwindcss";
+@import "tailwindcss/preflight" layer(base);
+@import "tailwindcss/utilities" layer(utilities);
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --secondary: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --card-border: #d4d7de;
+    --canvas: #f5f6f8;
+    --pdf-width-mm: 210;
+    --pdf-height-mm: 297;
+  }
+
+  body {
+    background-color: var(--canvas);
+    color: #111;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .dark body {
+    background-color: #0c0c0e;
+    color: #e4e4e7;
+  }
+}
+
+/* Live preview: true A4 box; print/export uses same geometry */
+.resume-page-a4 {
+  box-sizing: border-box;
+  width: 210mm;
+  min-height: 297mm;
+  max-width: 100%;
+}
+
+@media print {
+  .no-print,
+  .print-hide {
+    display: none !important;
+  }
+  .resume-page-a4 {
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+  body {
+    background: white !important;
+    color: #111 !important;
+  }
+}
+
+.workspace-border {
+  border: 1px solid #d4d7de;
+}
+
+.secondary-bg {
+  background-color: #f3f4f6;
+}

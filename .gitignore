@@ -1,41 +1,108 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
+# Secrets and local env (never commit real keys)
+.env
+.env.*
+!.env.example
+!.env*.example
+!.env.sample
 *.pem
+*.key
+secrets/
 
-# debug
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+.envrc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+dist/
+build/
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.nox/
+*.cover
+.hypothesis/
+
+# Node / JS / frontend tooling
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-store/
+dist/
+dist-ssr/
+build/
+.next/
+out/
+.nuxt/
+.turbo/
 *.tsbuildinfo
-next-env.d.ts
+.cache/
+.parcel-cache/
+.vite/
+
+# IDE and editors
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# VS Code — keep optional shared snippets; ignore user-local
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs and temp
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Test / e2e artifacts (if added later)
+test-results/
+playwright-report/
+coverage/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Cursor / local tooling (optional machine-specific)
+.cursor/*.local.*
+
+# Misc local overrides
+*.local

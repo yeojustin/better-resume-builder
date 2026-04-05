@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+python-multipart
+python-dotenv
+google-adk==1.28.1
+google-genai==1.70.0
+supabase
+pydantic-settings
+fpdf2
+PyPDF2
+axios
+pydantic
+uuid
+numpy
+scikit-learn
