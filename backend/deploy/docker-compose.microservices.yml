@@ -1,0 +1,131 @@
+# Five containers: four Gemini-backed services + proxy gateway on :8000.
+# From `backend/deploy/`:
+#   docker compose -f docker-compose.microservices.yml up --build
+#
+# Secrets: export GEMINI_API_KEY in the shell, or use a compose `.env` file next to this
+# YAML for variable substitution only — never commit real keys.
+#
+# Runtime uses APP_ENV=production (no loading of repo .env files inside containers).
+
+x-gemini-env: &gemini_env
+  APP_ENV: production
+  GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in the environment or deploy/.env}
+  DISABLE_CLIENT_GEMINI_KEY_HEADER: "true"
+
+x-healthcheck: &default_healthcheck
+  test:
+    [
+      "CMD",
+      "python",
+      "-c",
+      "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()",
+    ]
+  interval: 15s
+  timeout: 5s
+  retries: 3
+  start_period: 25s
+
+networks:
+  internal:
+    driver: bridge
+
+services:
+  ingestion:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    environment: *gemini_env
+    healthcheck: *default_healthcheck
+    networks:
+      - internal
+    command:
+      - uvicorn
+      - services.ingestion.app:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+
+  jd:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    environment: *gemini_env
+    healthcheck: *default_healthcheck
+    networks:
+      - internal
+    command:
+      - uvicorn
+      - services.jd.app:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+
+  analysis:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    environment: *gemini_env
+    healthcheck: *default_healthcheck
+    networks:
+      - internal
+    command:
+      - uvicorn
+      - services.analysis.app:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+
+  optimization:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    environment: *gemini_env
+    healthcheck: *default_healthcheck
+    networks:
+      - internal
+    command:
+      - uvicorn
+      - services.optimization.app:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+
+  gateway:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: production
+      GATEWAY_MODE: proxy
+      INGESTION_SERVICE_URL: http://ingestion:8000
+      JD_SERVICE_URL: http://jd:8000
+      ANALYSIS_SERVICE_URL: http://analysis:8000
+      OPTIMIZATION_SERVICE_URL: http://optimization:8000
+      # Browser CORS to your SPA (comma-separated). Example:
+      # ALLOWED_ORIGINS: https://app.example.com,https://www.example.com
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+    healthcheck: *default_healthcheck
+    networks:
+      - internal
+    command:
+      - uvicorn
+      - gateway.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+    depends_on:
+      ingestion:
+        condition: service_healthy
+      jd:
+        condition: service_healthy
+      analysis:
+        condition: service_healthy
+      optimization:
+        condition: service_healthy

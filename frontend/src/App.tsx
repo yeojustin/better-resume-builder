@@ -5,6 +5,10 @@ import { Workspace } from './components/Workspace';
 import { SessionGeminiKeyPanel } from './components/SessionGeminiKeyPanel';
 import { AlertTriangle, FileText, Moon, Sun, X } from 'lucide-react';
 
+const hideSessionGeminiUi =
+  import.meta.env.VITE_HIDE_SESSION_GEMINI_UI === 'true' ||
+  import.meta.env.VITE_HIDE_SESSION_GEMINI_UI === '1';
+
 export default function App() {
   const { errorMessage, clearError, theme, toggleTheme } = useStore();
 
@@ -28,7 +32,7 @@ export default function App() {
         <span className="min-w-0 flex-1 truncate text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
           Better Resume Builder
         </span>
-        <SessionGeminiKeyPanel />
+        {!hideSessionGeminiUi ? <SessionGeminiKeyPanel /> : null}
         <button
           type="button"
           onClick={() => toggleTheme()}

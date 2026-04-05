@@ -31,8 +31,8 @@ Parse a CV and a job description into structured JSON, run **match analysis** (M
 
 ## Branches
 
-- **`development`**: default local/Git workflow; use a server-side **`.env`** with `GEMINI_API_KEY` (or `GOOGLE_API_KEY`). The UI can still override per tab via **`X-Gemini-Api-Key`**.
-- **`deployment` (planned)**: a later branch aimed at production-style deploys that rely on **session-only** keys from the browser (no committed `.env` on the host). Keep secrets out of git on both branches; this repo’s root **`.gitignore`** excludes `.env`.
+- **`development`**: local workflow with optional **`.env`** at the repo root or under `backend/` (`APP_ENV` defaults to development so dotenv loading is on). The UI can still send **`X-Gemini-Api-Key`** unless the server sets **`DISABLE_CLIENT_GEMINI_KEY_HEADER=true`**.
+- **`deployment`**: production-oriented layout: **`APP_ENV=production`** so the app **does not read `.env` files** — inject **`GEMINI_API_KEY`** / **`GOOGLE_API_KEY`** via your host (Docker/Kubernetes/PaaS secrets). Prefer **`DISABLE_CLIENT_GEMINI_KEY_HEADER=true`** and build the frontend with **`VITE_HIDE_SESSION_GEMINI_UI=true`** to hide the session-key panel. See **`backend/deploy/README.md`** (Compose + Kubernetes templates).
 
 ## Local development
 
@@ -62,9 +62,9 @@ Set `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) in `.env` at the repo root or under `
 
 In the app header, **Add Gemini key** stores a key in the browser’s **session storage** (not `localStorage`, not the server disk). Each request can send it as the header **`X-Gemini-Api-Key`**; the gateway uses it for that Gemini call instead of the server `.env` key. Closing the tab clears it. The backend does not persist this header.
 
-## Microservice-style layout (split deploy later)
+## Microservices and gateway
 
-Each domain has its own FastAPI app; the **gateway** mounts them together for local dev.
+Each domain has its own FastAPI app. **Local default**: `GATEWAY_MODE=embedded` — `gateway.main` loads all routers in one process.
 
 | Service        | Module                      | Example port |
 |----------------|-----------------------------|--------------|
@@ -73,13 +73,14 @@ Each domain has its own FastAPI app; the **gateway** mounts them together for lo
 | Analysis       | `services.analysis.app`     | 8003         |
 | CV tailor      | `services.optimization.app` | 8004         |
 
-Run standalone (from `backend/` with `PYTHONPATH=.`):
+**Split deploy**: set `GATEWAY_MODE=proxy` and `INGESTION_SERVICE_URL`, `JD_SERVICE_URL`, `ANALYSIS_SERVICE_URL`, `OPTIMIZATION_SERVICE_URL` to the upstream base URLs. Docker Compose and Kubernetes examples live under **`backend/deploy/`**.
+
+Run workers locally (from `backend/` with `PYTHONPATH=.`):
 
 ```bash
 PYTHONPATH=. uvicorn services.ingestion.app:app --port 8001
 PYTHONPATH=. uvicorn services.jd.app:app --port 8002
 PYTHONPATH=. uvicorn services.analysis.app:app --port 8003
 PYTHONPATH=. uvicorn services.optimization.app:app --port 8004
+GATEWAY_MODE=proxy INGESTION_SERVICE_URL=http://127.0.0.1:8001 JD_SERVICE_URL=http://127.0.0.1:8002 ANALYSIS_SERVICE_URL=http://127.0.0.1:8003 OPTIMIZATION_SERVICE_URL=http://127.0.0.1:8004 PYTHONPATH=. uvicorn gateway.main:app --port 8000
 ```
-
-Point a future BFF gateway at these URLs via HTTP clients when you split the monolith.

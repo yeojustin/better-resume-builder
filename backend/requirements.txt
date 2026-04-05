@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+httpx
 python-multipart
 python-dotenv
 google-adk==1.28.1
@@ -8,7 +9,6 @@ supabase
 pydantic-settings
 fpdf2
 PyPDF2
-axios
 pydantic
 uuid
 numpy

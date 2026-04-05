@@ -1,0 +1,28 @@
+# Single container: embedded gateway (all routes in one process).
+# From `backend/deploy/`:
+#   docker compose -f docker-compose.monolith.yml up --build
+#
+# Set GEMINI_API_KEY in the shell or a compose `.env` next to this file
+# (substitution only — do not commit secrets). Containers use APP_ENV=production
+# so the app does not read repo `.env` files.
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: production
+      GATEWAY_MODE: embedded
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in the environment or deploy/.env}
+      DISABLE_CLIENT_GEMINI_KEY_HEADER: "true"
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+    command:
+      - uvicorn
+      - gateway.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"

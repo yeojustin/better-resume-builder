@@ -1,0 +1,61 @@
+# Template: HTTP proxy gateway (no Gemini key in this pod).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: brb-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: brb-gateway
+  template:
+    metadata:
+      labels:
+        app: brb-gateway
+    spec:
+      containers:
+        - name: gateway
+          image: YOUR_REGISTRY/better-resume-backend:latest
+          args:
+            - uvicorn
+            - gateway.main:app
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8000"
+          ports:
+            - containerPort: 8000
+          env:
+            - name: APP_ENV
+              value: production
+            - name: PYTHONPATH
+              value: /app
+            - name: GATEWAY_MODE
+              value: proxy
+            - name: INGESTION_SERVICE_URL
+              value: http://brb-ingestion:8000
+            - name: JD_SERVICE_URL
+              value: http://brb-jd:8000
+            - name: ANALYSIS_SERVICE_URL
+              value: http://brb-analysis:8000
+            - name: OPTIMIZATION_SERVICE_URL
+              value: http://brb-optimization:8000
+            - name: ALLOWED_ORIGINS
+              value: "https://your-frontend.example"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 3
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: brb-gateway
+spec:
+  selector:
+    app: brb-gateway
+  ports:
+    - port: 8000
+      targetPort: 8000
