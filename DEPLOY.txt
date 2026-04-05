@@ -1,0 +1,117 @@
+================================================================================
+BETTER RESUME BUILDER — PRODUCTION DEPLOYMENT (plain-text guide)
+================================================================================
+
+This file replaces the long deployment section in README.md. Keep secrets out of
+git: use your host’s environment, Docker/Kubernetes secrets, or a compose-only
+.env file on the server (never commit real keys).
+
+
+--------------------------------------------------------------------------------
+1. BACKEND — CONFIGURATION MODEL
+--------------------------------------------------------------------------------
+
+APP_ENV=production
+  The API does NOT load .env files from the repo inside the container. Inject
+  GEMINI_API_KEY / GOOGLE_API_KEY via the platform (Compose env, K8s Secret, etc.).
+
+GEMINI_API_KEY  or  GOOGLE_API_KEY
+  Google AI Studio API key for Gemini.
+
+DISABLE_CLIENT_GEMINI_KEY_HEADER=true   (recommended in production)
+  Ignore X-Gemini-Api-Key from browsers; only the server secret is used.
+
+GATEWAY_MODE=embedded
+  Single process: all routes in gateway.main (default for small deploys).
+
+GATEWAY_MODE=proxy
+  Gateway forwards to separate services. Set:
+  INGESTION_SERVICE_URL, JD_SERVICE_URL, ANALYSIS_SERVICE_URL,
+  OPTIMIZATION_SERVICE_URL (base URLs, no trailing path).
+
+ALLOWED_ORIGINS
+  Comma-separated CORS allowlist for your SPA origin(s). Match where the
+  browser is served from. If empty, see backend/shared/cors.py for behavior.
+
+Vertex AI (optional): USE_VERTEX_AI=true, GOOGLE_CLOUD_PROJECT,
+GOOGLE_CLOUD_LOCATION — instead of an API key.
+
+
+--------------------------------------------------------------------------------
+2. DOCKER — MONOLITH (ONE CONTAINER)
+--------------------------------------------------------------------------------
+
+From the directory backend/deploy/ (build context is backend/):
+
+  export GEMINI_API_KEY="your-key"
+  docker compose -f docker-compose.monolith.yml up --build
+
+The image is built from backend/; backend/.dockerignore excludes .env so keys
+are not baked into layers. Compose may still use a local .env next to the
+compose file only for variable substitution — that is host-side, not app dotenv.
+
+
+--------------------------------------------------------------------------------
+3. DOCKER — MICROSERVICES (FIVE CONTAINERS)
+--------------------------------------------------------------------------------
+
+From backend/deploy/:
+
+  export GEMINI_API_KEY="your-key"
+  docker compose -f docker-compose.microservices.yml up --build
+
+See docker-compose.microservices.yml for service names and ports.
+
+
+--------------------------------------------------------------------------------
+4. KUBERNETES (OUTLINE)
+--------------------------------------------------------------------------------
+
+Use the same image for every workload; only the container command differs.
+
+Workers (ingestion, jd, analysis, optimization):
+  - Env from a Secret: GEMINI_API_KEY
+  - APP_ENV=production
+  - DISABLE_CLIENT_GEMINI_KEY_HEADER=true
+  - PYTHONPATH=/app
+  - Example: uvicorn services.analysis.app:app --host 0.0.0.0 --port 8000
+
+Gateway (proxy mode):
+  - No API key in gateway if workers hold keys
+  - GATEWAY_MODE=proxy
+  - INGESTION_SERVICE_URL=http://ingestion:8000 (etc.)
+  - Expose gateway Service port 8000 to ingress
+
+Example YAML fragments: backend/deploy/kubernetes/
+
+
+--------------------------------------------------------------------------------
+5. FRONTEND — PRODUCTION BUILD
+--------------------------------------------------------------------------------
+
+The SPA must know the public API URL. When the API rejects client Gemini keys,
+hide the “Add Gemini key” UI.
+
+From the frontend/ directory:
+
+  VITE_API_BASE_URL=https://api.yourdomain.com \
+  VITE_HIDE_SESSION_GEMINI_UI=true \
+  npm run build
+
+Artifacts: frontend/dist/
+Host index.html + static assets (S3/CloudFront, nginx, Vercel, etc.).
+Ensure ALLOWED_ORIGINS on the backend includes your SPA’s origin.
+
+
+--------------------------------------------------------------------------------
+6. LOCAL VS PRODUCTION (QUICK CHECK)
+--------------------------------------------------------------------------------
+
+Local dev: see README.md “Run locally” (session key or .env + VITE flags).
+
+Production: APP_ENV=production, platform-injected secrets, DISABLE_CLIENT_GEMINI_KEY_HEADER=true,
+production frontend build with VITE_API_BASE_URL and VITE_HIDE_SESSION_GEMINI_UI=true.
+
+================================================================================
+End of DEPLOY.txt
+================================================================================

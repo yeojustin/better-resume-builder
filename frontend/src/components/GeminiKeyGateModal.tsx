@@ -1,11 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { KeyRound } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { hideSessionGeminiUi } from '../buildFlags';
+import { hideSessionGeminiUi, skipGeminiKeyGate } from '../buildFlags';
 
 /**
  * Blocks the app until the user adds a Gemini API key for this tab (session storage).
- * Skipped when the session-key UI is hidden (production / server-key-only builds).
+ * Skipped when the session-key UI is hidden, when local `VITE_SKIP_GEMINI_KEY_GATE` is set, or when a key exists.
  */
 export function GeminiKeyGateModal() {
   const hasSessionGeminiKey = useStore((s) => s.hasSessionGeminiKey);
@@ -15,7 +15,7 @@ export function GeminiKeyGateModal() {
   const titleId = useId();
 
   useEffect(() => {
-    if (hideSessionGeminiUi || hasSessionGeminiKey) return;
+    if (hideSessionGeminiUi || skipGeminiKeyGate || hasSessionGeminiKey) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
@@ -24,11 +24,11 @@ export function GeminiKeyGateModal() {
   }, [hasSessionGeminiKey]);
 
   useEffect(() => {
-    if (hideSessionGeminiUi || hasSessionGeminiKey) return;
+    if (hideSessionGeminiUi || skipGeminiKeyGate || hasSessionGeminiKey) return;
     inputRef.current?.focus();
   }, [hasSessionGeminiKey]);
 
-  if (hideSessionGeminiUi || hasSessionGeminiKey) return null;
+  if (hideSessionGeminiUi || skipGeminiKeyGate || hasSessionGeminiKey) return null;
 
   const submit = () => {
     const t = draft.trim();

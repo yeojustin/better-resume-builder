@@ -9,16 +9,21 @@ Parse a CV and a job description into structured JSON, run **match analysis** (M
 
 ---
 
-## Run locally
+## Run locally (step by step)
 
-### Prerequisites
+### What you need installed
 
-- **Python 3.12+** (recommended) and **Node.js 20+**
-- A **Google AI (Gemini) API key** ([Google AI Studio](https://aistudio.google.com/apikey))
+| Tool | Notes |
+|------|--------|
+| **Python 3.12+** | For the API (`python`, `pip`). A virtualenv is recommended. |
+| **Node.js 20+** | For the web UI (`node`, `npm`). |
+| **Gemini API key** | From [Google AI Studio](https://aistudio.google.com/apikey) (free tier available). |
 
-### 1. Backend API (gateway)
+You will run **two terminals**: one for the backend, one for the frontend.
 
-From the repo root:
+---
+
+### Terminal 1 — start the API
 
 ```bash
 cd backend
@@ -26,12 +31,11 @@ pip install -r requirements.txt
 PYTHONPATH=. uvicorn gateway.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-- API: [http://127.0.0.1:8000](http://127.0.0.1:8000) — OpenAPI docs at `/docs`.
-- Default mode is **`GATEWAY_MODE=embedded`** (all routes in one process).
+Leave this running. Check [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) for OpenAPI.
 
-### 2. Frontend
+---
 
-In another terminal:
+### Terminal 2 — start the web app
 
 ```bash
 cd frontend
@@ -39,56 +43,50 @@ npm install
 npm run dev
 ```
 
-- App: [http://127.0.0.1:5173](http://127.0.0.1:5173) (Vite default).
-
-### 3. Gemini API key (local)
-
-**Default (session key):** On first load, the app asks for your key. It is stored in the tab’s **session storage** and sent as **`X-Gemini-Api-Key`** on each request. In development, the backend normally **does not** use `GEMINI_API_KEY` / `GOOGLE_API_KEY` from `.env` so your session key is the source of truth.
-
-- To use **`.env` / shell** keys for Gemini instead: set **`GEMINI_SESSION_ONLY=false`** before starting the backend (optional `.env` at repo root or `backend/` as in older workflows).
-
-**Optional — point the UI at a different API host** (e.g. remote backend):
-
-```bash
-VITE_API_BASE_URL=https://your-api-host.example.com npm run dev
-```
-
-If unset, the client defaults to **`http://localhost:8000`**.
+Leave this running. Open [http://127.0.0.1:5173](http://127.0.0.1:5173).
 
 ---
 
-## Deploy (production)
+### How to give the app a Gemini key (pick one)
 
-### Backend
+**Option A — Session key (default, good for trying the repo quickly)**
 
-- Set **`APP_ENV=production`** so the app **does not** read repository `.env` files; inject secrets via your platform (Docker/Kubernetes/PaaS).
-- Provide **`GEMINI_API_KEY`** or **`GOOGLE_API_KEY`** in the container/process environment.
-- Set **`DISABLE_CLIENT_GEMINI_KEY_HEADER=true`** so browsers cannot override the server key with a header (recommended).
-- Set **`ALLOWED_ORIGINS`** to a comma-separated list of your **frontend origins** for CORS (or leave empty only if you accept the default CORS behavior documented in `backend/shared/cors.py`).
+1. Do **not** put `GEMINI_API_KEY` in `.env` (or leave session-only behavior as default).
+2. When the app opens, use **Add your Gemini API key** and paste your key. It stays in this **browser tab only** (session storage) and is sent as `X-Gemini-Api-Key`.
+3. No extra frontend flags needed.
 
-**Docker (single container, embedded gateway)** — from `backend/deploy/`:
+**Option B — `.env` file on your machine (server holds the key)**
 
-```bash
-export GEMINI_API_KEY="your-key"
-docker compose -f docker-compose.monolith.yml up --build
-```
+1. Copy **`.env.example`** to **`.env`** in the **repo root** or in **`backend/`** (either location works in development).
+2. In `.env`, set:
+   - `GEMINI_SESSION_ONLY=false`
+   - `GEMINI_API_KEY=...` (or `GOOGLE_API_KEY=...`)
+3. **Restart** the backend (Terminal 1) so it reloads the file.
+4. Start the frontend with the gate skipped so you are not forced to paste the key again in the browser:
 
-Build context and full variable list: **`backend/deploy/README.md`**. The image build uses **`backend/.dockerignore`** so `.env` files are not copied into the image.
+   ```bash
+   cd frontend
+   VITE_SKIP_GEMINI_KEY_GATE=true npm run dev
+   ```
 
-**Microservices + proxy gateway** — see `docker-compose.microservices.yml` and the same deploy README.
+   Alternatively, keep plain `npm run dev` and paste the same key in the first-run modal; the backend will still prefer `.env` when `GEMINI_SESSION_ONLY=false`.
 
-### Frontend (production build)
+---
 
-Build a static bundle and host it (S3+CloudFront, nginx, Vercel, etc.). You must set the **public API URL** and hide session-key UI when the API rejects client keys:
+### Optional local tweaks
 
-```bash
-cd frontend
-VITE_API_BASE_URL=https://api.yourdomain.com \
-VITE_HIDE_SESSION_GEMINI_UI=true \
-npm run build
-```
+| Goal | What to do |
+|------|------------|
+| API on another host/port | `VITE_API_BASE_URL=http://127.0.0.1:9000 npm run dev` (default if unset: `http://localhost:8000`) |
+| Skip loading any `.env` on the server | `SKIP_DOTENV=true` before `uvicorn` (advanced) |
 
-Output is under **`frontend/dist/`**. Serve `index.html` and assets; configure your CDN or reverse proxy so the browser can call `VITE_API_BASE_URL` with CORS allowed by the backend.
+---
+
+## Production deployment
+
+**Full instructions (Docker, env vars, Kubernetes outline, frontend build) are in plain text:**
+
+**[`DEPLOY.txt`](DEPLOY.txt)**
 
 ---
 
@@ -107,13 +105,13 @@ Output is under **`frontend/dist/`**. Serve `index.html` and assets; configure y
 ## Branches
 
 - **`development`** — day-to-day feature work.
-- **`deployment`** — release line aligned with production env (no runtime `.env` in containers, secrets from the host). This README describes how to run and ship that layout.
+- **`deployment`** — release line aligned with production-style configuration (see **`DEPLOY.txt`**).
 
 ---
 
 ## Microservices (advanced)
 
-Each domain has its own FastAPI app. Local default: **`GATEWAY_MODE=embedded`**. For split processes, set **`GATEWAY_MODE=proxy`** and `INGESTION_SERVICE_URL`, `JD_SERVICE_URL`, `ANALYSIS_SERVICE_URL`, `OPTIMIZATION_SERVICE_URL`. Example local commands and ports are in **`backend/deploy/README.md`**.
+Default local mode is **`GATEWAY_MODE=embedded`**. For multiple processes, use **`GATEWAY_MODE=proxy`** and set `INGESTION_SERVICE_URL`, `JD_SERVICE_URL`, `ANALYSIS_SERVICE_URL`, `OPTIMIZATION_SERVICE_URL`. Commands and ports are summarized in **`DEPLOY.txt`** and the Compose files under **`backend/deploy/`**.
 
 ```bash
 # Example: workers + proxy gateway (from backend/, PYTHONPATH=.)
