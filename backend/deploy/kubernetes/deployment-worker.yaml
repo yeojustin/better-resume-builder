@@ -1,4 +1,4 @@
-# Template: Gemini-backed worker (ingestion, jd, analysis, or optimization).
+# Template: Gemini-backed worker (ingestion, jd, or analysis).
 # Duplicate and set metadata.name, labels.app, and container.args to the right module.
 apiVersion: apps/v1
 kind: Deployment

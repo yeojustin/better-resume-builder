@@ -1,6 +1,6 @@
 """
 Gemini response_schema for structured resume JSON.
-Shared by ingestion (parse) and optimization (tailored_cv) services.
+Shared by ingestion (parse) and analysis rendering features.
 """
 
 GEMINI_RESUME_JSON_SCHEMA: dict = {

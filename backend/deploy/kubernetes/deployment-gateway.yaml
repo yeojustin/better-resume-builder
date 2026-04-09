@@ -38,8 +38,6 @@ spec:
               value: http://brb-jd:8000
             - name: ANALYSIS_SERVICE_URL
               value: http://brb-analysis:8000
-            - name: OPTIMIZATION_SERVICE_URL
-              value: http://brb-optimization:8000
             - name: ALLOWED_ORIGINS
               value: "https://your-frontend.example"
           readinessProbe:
