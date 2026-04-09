@@ -38,6 +38,23 @@ Open `http://127.0.0.1:5173`.
 
 Open API docs at `http://127.0.0.1:8000/docs`.
 
+## How scoring works (simple)
+
+```mermaid
+flowchart LR
+  A[Resume JSON + JD text] --> B[LLM analyzes fit]
+  A --> C[ML keyword match]
+  B --> D[LLM score]
+  C --> E[ML score]
+  D --> F[Strict scoring curve]
+  E --> F
+  F --> G[Combined score<br/>50% ML + 50% LLM]
+```
+
+- **LLM score:** holistic fit (skills, role alignment, impact evidence).
+- **ML score:** overlap between JD keywords and resume keywords (with soft matching, not exact-only).
+- **Combined score:** average of strict ML and strict LLM scores.
+
 ## Branches
 
 - `v2`: current working branch
