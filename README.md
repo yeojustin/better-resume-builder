@@ -1,6 +1,6 @@
 # Better Resume Builder
 
-Parse a CV and a job description into structured JSON, run **match analysis** (ML keyword overlap + **LLM** fit + optional TF–IDF reference), and get **line-level edit suggestions** grounded in your resume. Optionally **tailor** the full resume JSON via `POST /optimize-cv`.
+Parse a CV and a job description into structured JSON, run **match analysis** (ML keyword overlap + **LLM** fit + optional TF–IDF reference), and get **line-level edit suggestions** grounded in your resume.
 
 ## Tech stack
 
@@ -94,7 +94,7 @@ Leave this running. Open [http://127.0.0.1:5173](http://127.0.0.1:5173).
 
 ### Backend
 
-- Resume ingestion (PDF/Word → JSON + outline), JD ingestion (paste or file), **`POST /analyze-resume`** (LLM + ML + lexical reference), optional **`POST /optimize-cv`**.
+- Resume ingestion (PDF/Word → JSON + outline), JD ingestion (paste or file), **`POST /analyze-resume`** (LLM + ML + lexical reference).
 
 ### Frontend
 
@@ -111,16 +111,15 @@ Leave this running. Open [http://127.0.0.1:5173](http://127.0.0.1:5173).
 
 ## Microservices (advanced)
 
-Default local mode is **`GATEWAY_MODE=embedded`**. For multiple processes, use **`GATEWAY_MODE=proxy`** and set `INGESTION_SERVICE_URL`, `JD_SERVICE_URL`, `ANALYSIS_SERVICE_URL`, `OPTIMIZATION_SERVICE_URL`. Commands and ports are summarized in **`DEPLOY.txt`** and the Compose files under **`backend/deploy/`**.
+Default local mode is **`GATEWAY_MODE=embedded`**. For multiple processes, use **`GATEWAY_MODE=proxy`** and set `INGESTION_SERVICE_URL`, `JD_SERVICE_URL`, `ANALYSIS_SERVICE_URL`. Commands and ports are summarized in **`DEPLOY.txt`** and the Compose files under **`backend/deploy/`**.
 
 ```bash
 # Example: workers + proxy gateway (from backend/, PYTHONPATH=.)
 PYTHONPATH=. uvicorn services.ingestion.app:app --port 8001
-# … jd 8002, analysis 8003, optimization 8004 …
+# … jd 8002, analysis 8003 …
 GATEWAY_MODE=proxy \
   INGESTION_SERVICE_URL=http://127.0.0.1:8001 \
   JD_SERVICE_URL=http://127.0.0.1:8002 \
   ANALYSIS_SERVICE_URL=http://127.0.0.1:8003 \
-  OPTIMIZATION_SERVICE_URL=http://127.0.0.1:8004 \
   PYTHONPATH=. uvicorn gateway.main:app --port 8000
 ```

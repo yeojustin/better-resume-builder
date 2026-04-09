@@ -1,1 +1,1 @@
-"""Domain microservices (ingestion, optimization). Each owns API routes + business logic."""
+"""Domain microservices (ingestion, jd, analysis). Each owns API routes + business logic."""

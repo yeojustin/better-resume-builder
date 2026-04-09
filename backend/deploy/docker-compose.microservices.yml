@@ -1,4 +1,4 @@
-# Five containers: four Gemini-backed services + proxy gateway on :8000.
+# Four containers: three Gemini-backed services + proxy gateway on :8000.
 # From `backend/deploy/`:
 #   docker compose -f docker-compose.microservices.yml up --build
 #
@@ -78,22 +78,6 @@ services:
       - --port
       - "8000"
 
-  optimization:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile
-    environment: *gemini_env
-    healthcheck: *default_healthcheck
-    networks:
-      - internal
-    command:
-      - uvicorn
-      - services.optimization.app:app
-      - --host
-      - 0.0.0.0
-      - --port
-      - "8000"
-
   gateway:
     build:
       context: ..
@@ -106,7 +90,6 @@ services:
       INGESTION_SERVICE_URL: http://ingestion:8000
       JD_SERVICE_URL: http://jd:8000
       ANALYSIS_SERVICE_URL: http://analysis:8000
-      OPTIMIZATION_SERVICE_URL: http://optimization:8000
       # Browser CORS to your SPA (comma-separated). Example:
       # ALLOWED_ORIGINS: https://app.example.com,https://www.example.com
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
@@ -126,6 +109,4 @@ services:
       jd:
         condition: service_healthy
       analysis:
-        condition: service_healthy
-      optimization:
         condition: service_healthy

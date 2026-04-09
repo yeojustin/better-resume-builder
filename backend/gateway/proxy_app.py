@@ -38,7 +38,6 @@ def _service_urls() -> dict[str, str]:
         "ingestion": os.getenv("INGESTION_SERVICE_URL", "http://127.0.0.1:8001").rstrip("/"),
         "jd": os.getenv("JD_SERVICE_URL", "http://127.0.0.1:8002").rstrip("/"),
         "analysis": os.getenv("ANALYSIS_SERVICE_URL", "http://127.0.0.1:8003").rstrip("/"),
-        "optimization": os.getenv("OPTIMIZATION_SERVICE_URL", "http://127.0.0.1:8004").rstrip("/"),
     }
 
 
@@ -47,7 +46,6 @@ ROUTE_TARGETS: list[tuple[str, str]] = [
     ("/parse-jd", "jd"),
     ("/parse-jd-text", "jd"),
     ("/analyze-resume", "analysis"),
-    ("/optimize-cv", "optimization"),
 ]
 
 
