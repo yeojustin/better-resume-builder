@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
-import { useStore, DEFAULT_ANALYZE_SETTINGS, type ProfessionalismTone } from '../store/useStore';
+import { useStore, DEFAULT_ANALYZE_SETTINGS } from '../store/useStore';
 import { FileCode, Activity, Loader2 } from 'lucide-react';
 import { AnalysisPane } from './AnalysisPane';
 import { JDStructureView } from './JDStructureView';
@@ -143,9 +143,12 @@ export const Workspace = () => {
             Analyze
           </button>
         </div>
+        <div className="border-b border-zinc-200 bg-zinc-50 px-4 py-2 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400">
+          Add a job description, tune analysis options, then press Analyze.
+        </div>
 
         <div className="relative min-h-0 flex-1 overflow-y-auto">
-          <details className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
+          <details open className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
             <summary className="cursor-pointer list-none px-4 py-2 text-xs font-medium text-zinc-700 marker:hidden dark:text-zinc-200 [&::-webkit-details-marker]:hidden">
               Analysis options
             </summary>
@@ -218,25 +221,6 @@ export const Workspace = () => {
                   }
                   className="mt-1 w-full accent-zinc-900 dark:accent-zinc-100"
                 />
-              </label>
-              <label className="block text-[10px] text-zinc-500 dark:text-zinc-400">
-                <span className="font-medium text-zinc-700 dark:text-zinc-200">Professionalism</span>
-                <select
-                  value={az.professionalism}
-                  disabled={busy}
-                  onChange={(e) =>
-                    activeProjectId &&
-                    setProjectAnalyzeSettings(activeProjectId, {
-                      ...az,
-                      professionalism: e.target.value as ProfessionalismTone,
-                    })
-                  }
-                  className="mt-1 w-full rounded border border-zinc-200 bg-white px-2 py-1.5 text-xs text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                >
-                  <option value="direct">Direct — short, plain</option>
-                  <option value="professional">Professional — standard workplace</option>
-                  <option value="formal">Formal — conservative</option>
-                </select>
               </label>
             </div>
           </details>

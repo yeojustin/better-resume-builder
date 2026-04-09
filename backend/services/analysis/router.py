@@ -20,6 +20,5 @@ async def analyze_resume_endpoint(
         groundedness_percent=req.groundedness_percent,
         creativity_percent=req.creativity_percent,
         temperature=req.temperature,
-        professionalism=req.professionalism,
         gemini_api_key=key,
     )

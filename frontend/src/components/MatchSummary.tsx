@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { AnalysisResult } from '../store/useStore';
 import { scoreBarBgClass, scoreTextClass } from '../utils/scoreColor';
 
@@ -9,6 +9,7 @@ export function MatchSummary({
   analysis: AnalysisResult;
   omitSectionTitle?: string;
 }) {
+  const [copiedMissing, setCopiedMissing] = useState<string | null>(null);
   const lm = analysis.lexical_metrics;
   const ml = analysis.ml_metrics;
   const llmFit = analysis.llm.fit_score_llm;
@@ -43,6 +44,16 @@ export function MatchSummary({
     }
     return list;
   }, [analysis, mlScore, omitSectionTitle]);
+
+  const copyKeyword = async (kw: string) => {
+    try {
+      await navigator.clipboard.writeText(kw);
+      setCopiedMissing(kw);
+      window.setTimeout(() => setCopiedMissing((v) => (v === kw ? null : v)), 1200);
+    } catch {
+      /* ignore clipboard failures */
+    }
+  };
 
   return (
     <div className="border-b border-zinc-200 bg-white px-3 py-3 sm:px-4 dark:border-zinc-800 dark:bg-zinc-950">
@@ -133,12 +144,15 @@ export function MatchSummary({
       </div>
       <div className="mt-1 flex flex-wrap gap-1">
         {missingKw.slice(0, 24).map((kw) => (
-          <span
+          <button
             key={kw}
-            className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] text-red-900 dark:bg-red-950 dark:text-red-200"
+            type="button"
+            title="Click to copy keyword"
+            onClick={() => void copyKeyword(kw)}
+            className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] text-red-900 transition-colors hover:bg-red-200 dark:bg-red-950 dark:text-red-200 dark:hover:bg-red-900/70"
           >
-            {kw}
-          </span>
+            {copiedMissing === kw ? `${kw}  Copied` : kw}
+          </button>
         ))}
       </div>
     </div>

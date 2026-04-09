@@ -25,10 +25,7 @@ export function AnalysisPane() {
     return (
       <div className="flex h-full flex-col border-l border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
         <div className="border-b border-zinc-200 px-4 py-3 sm:px-5 dark:border-zinc-800">
-          <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">What to change</h2>
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            Add a job description, tune analysis options, then press Analyze.
-          </p>
+          <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Suggested changes</h2>
         </div>
       </div>
     );
@@ -56,7 +53,7 @@ export function AnalysisPane() {
     <div className="flex h-full min-h-0 flex-col border-l border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
       <div className="shrink-0 border-b border-zinc-200 px-4 py-3 sm:px-5 dark:border-zinc-800">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">What to change</h2>
+          <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Suggested changes</h2>
           <button
             type="button"
             disabled={exporting}
@@ -68,8 +65,7 @@ export function AnalysisPane() {
         </div>
         {su ? (
           <p className="mt-2 rounded border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-[10px] leading-relaxed text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-400">
-            Run used: groundedness {su.groundedness_percent}%, creativity {su.creativity_percent}%, temperature {su.temperature.toFixed(2)},
-            tone <span className="text-zinc-900 dark:text-zinc-100">{su.professionalism}</span>.
+            Run used: groundedness {su.groundedness_percent}%, creativity {su.creativity_percent}%, temperature {su.temperature.toFixed(2)}.
           </p>
         ) : null}
       </div>

@@ -120,8 +120,6 @@ export interface LineEdit {
   priority?: 'high' | 'medium' | 'low';
 }
 
-export type ProfessionalismTone = 'direct' | 'professional' | 'formal';
-
 export interface AnalyzeSettings {
   /** 70–100: stricter = stay closer to exact resume wording / facts */
   groundednessPercent: number;
@@ -129,14 +127,12 @@ export interface AnalyzeSettings {
   creativityPercent: number;
   /** Model randomness (0–0.95) */
   temperature: number;
-  professionalism: ProfessionalismTone;
 }
 
 export const DEFAULT_ANALYZE_SETTINGS: AnalyzeSettings = {
   groundednessPercent: 100,
   creativityPercent: 35,
   temperature: 0.22,
-  professionalism: 'professional',
 };
 
 export interface SectionChangeRow {
@@ -149,7 +145,6 @@ export interface AnalysisSettingsUsed {
   groundedness_percent: number;
   creativity_percent: number;
   temperature: number;
-  professionalism: string;
 }
 
 export interface SectionScoreRow {
@@ -314,7 +309,6 @@ export const useStore = create<AppState>((set, get) => ({
         groundedness_percent: s.groundednessPercent,
         creativity_percent: s.creativityPercent,
         temperature: s.temperature,
-        professionalism: s.professionalism,
       });
       set((state) => ({
         projects: state.projects.map((p) =>

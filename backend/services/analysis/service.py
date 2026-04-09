@@ -1,7 +1,5 @@
 import json
 import logging
-from typing import Literal
-
 from fastapi import HTTPException
 from google.genai import types
 from pydantic import BaseModel, Field
@@ -407,15 +405,12 @@ def _prompt_controls(
     *,
     groundedness_percent: int,
     creativity_percent: int,
-    professionalism: str,
 ) -> str:
     g = max(70, min(100, int(groundedness_percent)))
     c = max(0, min(100, int(creativity_percent)))
-    prof = professionalism if professionalism in ("direct", "professional", "formal") else "professional"
     return f"""USER SETTINGS (follow closely):
 - Groundedness {g}% (70–100): At 100, every "before" is an exact substring from the Resume JSON and "after" must not add employers, degrees, tools, or dates not already present or clearly implied. Lower values allow more paraphrase but never invent major credentials.
 - Creativity {c}% (0–100): Low = minimal edits for JD fit. High = stronger rewrite while respecting groundedness.
-- Professionalism = {prof}: tone for all "after" text — direct=plain and short; professional=standard workplace; formal=conservative and polished.
 - section_review: include exactly one entry per section title listed below (match section_title strings exactly, including "Contact & summary" if listed). Each entry must state has_suggested_edits true/false and a short why (max ~22 words)."""
 
 
@@ -429,7 +424,6 @@ class AnalyzeRequest(BaseModel):
     groundedness_percent: int = Field(100, ge=70, le=100)
     creativity_percent: int = Field(35, ge=0, le=100)
     temperature: float = Field(0.22, ge=0.0, le=0.95)
-    professionalism: Literal["direct", "professional", "formal"] = "professional"
 
 
 async def analyze_resume_vs_jd(
@@ -440,7 +434,6 @@ async def analyze_resume_vs_jd(
     groundedness_percent: int = 100,
     creativity_percent: int = 35,
     temperature: float = 0.22,
-    professionalism: str = "professional",
     gemini_api_key: str | None = None,
 ) -> dict:
     resume_plain = resume_to_plain_text(resume_json)
@@ -456,7 +449,6 @@ async def analyze_resume_vs_jd(
     ctrl = _prompt_controls(
         groundedness_percent=groundedness_percent,
         creativity_percent=creativity_percent,
-        professionalism=professionalism,
     )
     temp = max(0.0, min(0.95, float(temperature)))
 
@@ -553,7 +545,6 @@ JSON only. No markdown.
         "groundedness_percent": max(70, min(100, int(groundedness_percent))),
         "creativity_percent": max(0, min(100, int(creativity_percent))),
         "temperature": temp,
-        "professionalism": professionalism if professionalism in ("direct", "professional", "formal") else "professional",
     }
 
     return {
