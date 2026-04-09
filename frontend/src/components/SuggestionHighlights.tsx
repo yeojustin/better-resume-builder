@@ -22,7 +22,7 @@ function MarkSuggestion({
   edit: LineEdit;
   useTap: boolean;
 }) {
-  const [tapOpen, setTapOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [bubblePlacement, setBubblePlacement] = useState<'top' | 'bottom'>('top');
   const [bubbleLeftPx, setBubbleLeftPx] = useState(0);
@@ -65,10 +65,10 @@ function MarkSuggestion({
   }, []);
 
   useEffect(() => {
-    if (!useTap || !tapOpen) return;
+    if (!open) return;
     const close = (ev: MouseEvent | TouchEvent) => {
       const el = wrapRef.current;
-      if (el && !el.contains(ev.target as Node)) setTapOpen(false);
+      if (el && !el.contains(ev.target as Node)) setOpen(false);
     };
     document.addEventListener('mousedown', close);
     document.addEventListener('touchstart', close, { passive: true });
@@ -76,7 +76,7 @@ function MarkSuggestion({
       document.removeEventListener('mousedown', close);
       document.removeEventListener('touchstart', close);
     };
-  }, [useTap, tapOpen]);
+  }, [open]);
 
   useEffect(() => {
     recalcBubblePosition();
@@ -95,26 +95,28 @@ function MarkSuggestion({
         tabIndex={0}
         onClick={(e) => {
           e.stopPropagation();
-          if (useTap) setTapOpen((o) => !o);
+          setOpen((o) => !o);
         }}
         onKeyDown={(e) => {
-          if (useTap && (e.key === 'Enter' || e.key === ' ')) {
+          if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            setTapOpen((o) => !o);
+            setOpen((o) => !o);
           }
         }}
         onMouseEnter={() => recalcBubblePosition()}
         onFocus={() => recalcBubblePosition()}
-        className="cursor-pointer rounded-sm bg-amber-200/90 px-0.5 text-inherit underline decoration-amber-600/50 decoration-dotted underline-offset-2 dark:bg-amber-900/50 dark:decoration-amber-400/40 md:cursor-default md:no-underline"
+        className="cursor-pointer rounded-sm bg-amber-200/90 px-0.5 text-inherit underline decoration-amber-600/50 decoration-dotted underline-offset-2 dark:bg-amber-900/50 dark:decoration-amber-400/40"
       >
         {text}
       </mark>
-      {/* Desktop / fine pointer: hover tooltip above */}
+      {/* Desktop / fine pointer: hover tooltip above; click keeps it sticky */}
       <span
         ref={tooltipRef}
         role="tooltip"
-        className={`invisible absolute z-[200] w-[min(92vw,18rem)] -translate-x-1/2 rounded-lg border border-zinc-200 bg-white p-2.5 text-left text-[11px] leading-snug opacity-0 shadow-lg ring-1 ring-black/5 transition-opacity duration-150 group-hover/hl:visible group-hover/hl:opacity-100 dark:border-zinc-600 dark:bg-zinc-900 dark:ring-white/10 max-md:hidden ${
+        className={`absolute z-[200] w-[min(92vw,18rem)] -translate-x-1/2 rounded-lg border border-zinc-200 bg-white p-2.5 text-left text-[11px] leading-snug shadow-lg ring-1 ring-black/5 transition-opacity duration-150 dark:border-zinc-600 dark:bg-zinc-900 dark:ring-white/10 max-md:hidden ${
           bubblePlacement === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+        } ${
+          open ? 'visible opacity-100' : 'invisible opacity-0 group-hover/hl:visible group-hover/hl:opacity-100'
         }`}
         style={{ left: `${bubbleLeftPx}px` }}
         onMouseEnter={() => recalcBubblePosition()}
@@ -133,7 +135,7 @@ function MarkSuggestion({
         {note ? <p className="mt-1.5 text-zinc-500 dark:text-zinc-400">{note}</p> : null}
       </span>
       {/* Mobile / coarse pointer: tap panel below */}
-      {useTap && tapOpen ? (
+      {useTap && open ? (
         <span
           role="dialog"
           aria-label="Suggested change"
