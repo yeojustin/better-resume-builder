@@ -77,13 +77,24 @@ export const Sidebar = () => {
       </div>
 
       {/* Status row */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-2">
+      <div className="flex items-center justify-between px-4 pb-2 pt-3">
         <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400 dark:text-zinc-500">All resumes</p>
         <span className="inline-flex items-center gap-1 text-[9px] font-medium text-zinc-400 dark:text-zinc-500">
-          {isBackendOnline === true ? (
-            <><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /><span>API online</span></>
+          {isBackendOnline === null ? (
+            <>
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+              <span>Checking API</span>
+            </>
+          ) : isBackendOnline ? (
+            <>
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              <span>API online</span>
+            </>
           ) : (
-            <><span className="h-1.5 w-1.5 rounded-full bg-red-400" /><span>API offline</span></>
+            <>
+              <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+              <span>API offline</span>
+            </>
           )}
         </span>
       </div>
@@ -115,7 +126,7 @@ export const Sidebar = () => {
       )}
 
       {/* Project list */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 space-y-1">
+      <div className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 pb-3">
         {projects.length === 0 && !isUploading && (
           <p className="pt-6 text-center text-[12px] text-zinc-400 dark:text-zinc-500">
             No resumes yet.
