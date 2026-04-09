@@ -473,6 +473,12 @@ CORE RULES:
 
 STRICT SCORING & JD FIT:
 - fit_score_llm and each section relevance_score: use a demanding rubric (avoid grade inflation). 90+ only for near-perfect JD alignment; strong but imperfect candidates often land in the 60s–low 80s; clear gaps in must-have themes or tools → lower.
+- score fit_score_llm using this weighted checklist:
+  1) Must-have skills/tools coverage (40%)
+  2) Domain/role alignment and responsibility match (25%)
+  3) Evidence of impact/ownership in resume bullets (20%)
+  4) Seniority/scope consistency for the target role (15%)
+- section relevance_score should mirror the same idea at section level: concrete JD signal present = higher; generic or off-target content = lower.
 - line_edits: actively propose changes wherever JD-aligned wording would improve fit (keywords, impact, tools the JD stresses). Do not skip helpful rewrites just to return fewer edits; stay grounded in facts already in the resume.
 
 Lexical / TF–IDF reference (for debugging; headline ML uses your keyword lists):

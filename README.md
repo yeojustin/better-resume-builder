@@ -102,6 +102,55 @@ Leave this running. Open [http://127.0.0.1:5173](http://127.0.0.1:5173).
 
 ---
 
+## Scoring Diagram
+
+```mermaid
+flowchart TD
+  A[Resume JSON + JD text] --> B[LLM extraction]
+  B --> B1[jd_keywords]
+  B --> B2[resume_keywords]
+  B --> B3[fit_score_llm + section_rankings + line_edits]
+
+  B1 --> C[ML keyword scoring]
+  B2 --> C
+  C --> C1[Normalize aliases + stem tokens]
+  C1 --> C2[Exact overlap + soft phrase match + token recall]
+  C2 --> C3[ml_score_percent]
+
+  B3 --> D[Strict curve]
+  C3 --> D2[Strict curve]
+  D --> E[strict_llm_fit]
+  D2 --> F[strict_ml]
+
+  E --> G[combined_score_percent]
+  F --> G
+  G --> H[50% strict ML + 50% strict LLM]
+```
+
+### ML score details
+
+- Input is **LLM-extracted keyword lists** (`jd_keywords`, `resume_keywords`), not raw full-text cosine only.
+- Matching is **not just word-for-word**:
+  - Alias normalization (`js`→`javascript`, `k8s`→`kubernetes`, etc.)
+  - Lightweight stemming (`optimized` vs `optimization`)
+  - Soft phrase similarity + token-level coverage
+- Blend favors JD-side coverage to avoid false zero while still penalizing missing must-haves.
+
+### LLM scoring instructions (used in prompt)
+
+- `fit_score_llm` and each section `relevance_score` use a strict rubric:
+  - 90+ only near-perfect JD alignment
+  - strong but imperfect candidates often 60s–low 80s
+  - missing must-have tools/themes lowers score materially
+- Weighted checklist for `fit_score_llm`:
+  - Must-have skills/tools coverage (40%)
+  - Domain/role alignment and responsibility match (25%)
+  - Evidence of impact/ownership in bullets (20%)
+  - Seniority/scope consistency (15%)
+- `line_edits` must propose JD-aligned rewrites when helpful, while staying grounded in facts already in the resume.
+
+---
+
 ## Branches
 
 - **`development`** — day-to-day feature work.

@@ -7,6 +7,7 @@ Used alongside LLM analysis for transparent, deployable scoring.
 from __future__ import annotations
 
 import re
+from difflib import SequenceMatcher
 from typing import Any
 
 # sklearn is optional at import time for tests/tools; service runtime should install it.
@@ -80,6 +81,62 @@ def _jaccard(a: set[str], b: set[str]) -> float:
     return inter / union if union else 0.0
 
 
+def _normalize_phrase(s: str) -> str:
+    s = (s or "").strip().lower()
+    s = re.sub(r"[\/_]+", " ", s)
+    s = re.sub(r"\s+", " ", s)
+    # Lightweight synonyms/aliases for common JD terms.
+    alias = {
+        "js": "javascript",
+        "ts": "typescript",
+        "node": "nodejs",
+        "node.js": "nodejs",
+        "react.js": "react",
+        "next.js": "nextjs",
+        "ci cd": "cicd",
+        "ci/cd": "cicd",
+        "k8s": "kubernetes",
+        "gcp": "google cloud",
+        "aws cloud": "aws",
+        "ml": "machine learning",
+        "ai": "artificial intelligence",
+    }
+    return alias.get(s, s)
+
+
+def _stem_token(t: str) -> str:
+    t = t.strip().lower()
+    if len(t) <= 4:
+        return t
+    for suf in ("ization", "ations", "ation", "ities", "ments", "ment", "ingly", "edly", "ing", "ers", "ies", "ied", "ed", "es", "s"):
+        if t.endswith(suf) and len(t) - len(suf) >= 3:
+            return t[: -len(suf)] + ("y" if suf in ("ies", "ied") else "")
+    return t
+
+
+def _phrase_tokens(s: str) -> set[str]:
+    toks = _tokenize(_normalize_phrase(s))
+    return {_stem_token(t) for t in toks if t}
+
+
+def _phrase_match(a: str, b: str) -> bool:
+    na = _normalize_phrase(a)
+    nb = _normalize_phrase(b)
+    if not na or not nb:
+        return False
+    if na == nb:
+        return True
+    ta = _phrase_tokens(na)
+    tb = _phrase_tokens(nb)
+    if ta and tb:
+        ov = len(ta & tb)
+        ratio = ov / max(1, min(len(ta), len(tb)))
+        if ratio >= 0.6:
+            return True
+    # Soft fallback for close spelling/phrasing variations.
+    return SequenceMatcher(None, na, nb).ratio() >= 0.87
+
+
 def compute_llm_keyword_ml_score(
     jd_keywords: list[Any],
     resume_keywords: list[Any],
@@ -91,17 +148,22 @@ def compute_llm_keyword_ml_score(
     Uses set overlap (Jaccard + JD recall blend). Falls back to TF–IDF headline if lists empty.
     """
 
-    def _norm_set(raw: list[Any]) -> set[str]:
-        out: set[str] = set()
+    def _norm_list(raw: list[Any]) -> list[str]:
+        out: list[str] = []
+        seen: set[str] = set()
         for x in raw:
             if isinstance(x, str):
-                t = x.strip().lower()
+                t = _normalize_phrase(x)
                 if len(t) >= 2:
-                    out.add(t)
+                    if t not in seen:
+                        out.append(t)
+                        seen.add(t)
         return out
 
-    j_set = _norm_set(jd_keywords)
-    r_set = _norm_set(resume_keywords)
+    j_list = _norm_list(jd_keywords)
+    r_list = _norm_list(resume_keywords)
+    j_set = set(j_list)
+    r_set = set(r_list)
 
     if not j_set and not r_set:
         fb = max(0, min(100, int(fallback_lexical_percent)))
@@ -116,17 +178,37 @@ def compute_llm_keyword_ml_score(
             "method_notes": "ml_keywords_empty_fallback_tfidf",
         }
 
-    inter = j_set & r_set
-    union = j_set | r_set
-    jaccard = len(inter) / len(union) if union else 0.0
-    recall_jd = len(inter) / len(j_set) if j_set else 1.0
-    # Slightly stricter blend: JD recall matters; dampen optimistic overlap
-    blended = 0.36 * jaccard + 0.54 * recall_jd
-    ml_pct = int(round(100 * max(0.0, min(1.0, blended)) * 0.96))
+    exact_inter = j_set & r_set
+    # JD-centric soft matching: gives credit for close concepts, not only exact strings.
+    soft_matched_jd: set[str] = set()
+    for j in j_list:
+        if j in exact_inter:
+            soft_matched_jd.add(j)
+            continue
+        for r in r_list:
+            if _phrase_match(j, r):
+                soft_matched_jd.add(j)
+                break
+
+    # Token-level coverage for more holistic fit.
+    j_tok: set[str] = set()
+    r_tok: set[str] = set()
+    for k in j_list:
+        j_tok |= _phrase_tokens(k)
+    for k in r_list:
+        r_tok |= _phrase_tokens(k)
+
+    token_recall = len(j_tok & r_tok) / len(j_tok) if j_tok else 1.0
+    recall_jd = len(soft_matched_jd) / len(j_set) if j_set else 1.0
+    exact_jaccard = len(exact_inter) / len(j_set | r_set) if (j_set or r_set) else 1.0
+
+    # Holistic blend: emphasize JD coverage, include token-level semantic-ish overlap.
+    blended = 0.20 * exact_jaccard + 0.50 * recall_jd + 0.30 * token_recall
+    ml_pct = int(round(100 * max(0.0, min(1.0, blended)) * 0.98))
     ml_pct = max(0, min(100, ml_pct))
 
-    matched = sorted(inter)
-    missing = sorted(j_set - r_set)
+    matched = sorted(soft_matched_jd)
+    missing = sorted(j_set - soft_matched_jd)
 
     return {
         "ml_score_percent": ml_pct,
@@ -134,9 +216,9 @@ def compute_llm_keyword_ml_score(
         "missing_keywords": missing[:80],
         "jd_keyword_count": len(j_set),
         "resume_keyword_count": len(r_set),
-        "jaccard_percent": int(round(100 * jaccard)),
+        "jaccard_percent": int(round(100 * exact_jaccard)),
         "keyword_recall_percent": int(round(100 * recall_jd)),
-        "method_notes": "llm_keyword_sets_jaccard_recall",
+        "method_notes": "llm_keywords_soft_phrase_and_token_recall",
     }
 
 
