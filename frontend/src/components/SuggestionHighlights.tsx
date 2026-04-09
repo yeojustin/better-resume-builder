@@ -23,6 +23,7 @@ function MarkSuggestion({
   useTap: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
   const [copied, setCopied] = useState(false);
   const [bubblePlacement, setBubblePlacement] = useState<'top' | 'bottom'>('top');
   const [bubbleLeftPx, setBubbleLeftPx] = useState(0);
@@ -103,9 +104,17 @@ function MarkSuggestion({
             setOpen((o) => !o);
           }
         }}
-        onMouseEnter={() => recalcBubblePosition()}
+        onMouseEnter={() => {
+          setIsHovering(true);
+          recalcBubblePosition();
+        }}
+        onMouseLeave={() => setIsHovering(false)}
         onFocus={() => recalcBubblePosition()}
-        className="cursor-pointer rounded-sm bg-amber-200/90 px-0.5 text-inherit underline decoration-amber-600/50 decoration-dotted underline-offset-2 dark:bg-amber-900/50 dark:decoration-amber-400/40"
+        className={`cursor-pointer rounded-sm px-0.5 text-inherit underline decoration-dotted underline-offset-2 transition-all duration-150 ${
+          open || isHovering
+            ? 'bg-amber-300 text-zinc-900 decoration-amber-700 ring-1 ring-amber-500/60 dark:bg-amber-700/70 dark:text-zinc-50 dark:decoration-amber-200 dark:ring-amber-300/50'
+            : 'bg-amber-200/90 decoration-amber-600/50 dark:bg-amber-900/50 dark:decoration-amber-400/40'
+        }`}
       >
         {text}
       </mark>
@@ -119,7 +128,11 @@ function MarkSuggestion({
           open ? 'visible opacity-100' : 'invisible opacity-0 group-hover/hl:visible group-hover/hl:opacity-100'
         }`}
         style={{ left: `${bubbleLeftPx}px` }}
-        onMouseEnter={() => recalcBubblePosition()}
+        onMouseEnter={() => {
+          setIsHovering(true);
+          recalcBubblePosition();
+        }}
+        onMouseLeave={() => setIsHovering(false)}
       >
         <div className="flex items-center justify-between gap-2">
           <p className="text-[9px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">Suggested</p>

@@ -34,6 +34,9 @@ export function AnalysisPane() {
     <div className="flex h-full min-h-0 flex-col border-l border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
       <div className="shrink-0 border-b border-zinc-200 px-4 py-3 sm:px-5 dark:border-zinc-800">
         <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Suggested changes</h2>
+        <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+          Hover highlighted text to preview suggestions. Click to pin, then click outside to close.
+        </p>
         {su ? (
           <p className="mt-2 rounded border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-[10px] leading-relaxed text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-400">
             Run used: groundedness {su.groundedness_percent}%, creativity {su.creativity_percent}%, temperature {su.temperature.toFixed(2)}.
