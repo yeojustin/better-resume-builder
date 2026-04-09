@@ -151,7 +151,7 @@ def _bucket_edits_by_section(resume_json: dict, edits_list: list[dict]) -> tuple
     return buckets, orphans
 
 
-def _default_review_why(section_title: str, has_edits: bool) -> str:
+def _default_review_why(has_edits: bool) -> str:
     if has_edits:
         return "Suggested wording updates below — copy any line you agree with."
     return (
@@ -318,7 +318,7 @@ def normalize_llm_analysis_block(resume_json: dict, llm_block: dict) -> list[dic
             row["has_suggested_edits"] = bool(has_from_edits or has_llm)
             why = (row.get("why") or "").strip() if isinstance(row.get("why"), str) else ""
             if not why:
-                row["why"] = _default_review_why(t, row["has_suggested_edits"])
+                row["why"] = _default_review_why(row["has_suggested_edits"])
             else:
                 row["why"] = why[:400]
             merged.append(row)
@@ -327,7 +327,7 @@ def normalize_llm_analysis_block(resume_json: dict, llm_block: dict) -> list[dic
                 {
                     "section_title": t,
                     "has_suggested_edits": has_from_edits,
-                    "why": _default_review_why(t, has_from_edits),
+                    "why": _default_review_why(has_from_edits),
                 }
             )
     llm_block["section_review"] = merged

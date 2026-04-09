@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode, type RefObject } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import type { LineEdit } from '../store/useStore';
 import { SuggestionHighlights } from './SuggestionHighlights';
 
@@ -126,17 +126,15 @@ function packPages(segs: Seg[], maxH: number): Seg[][] {
 export function ResumeAnnotatedPages({
   content,
   lineEdits,
-  containerRef,
 }: {
   content: unknown;
   lineEdits: LineEdit[];
-  containerRef?: RefObject<HTMLDivElement | null>;
 }) {
   const segs = useMemo(() => buildSegments(content, lineEdits), [content, lineEdits]);
   const pages = useMemo(() => packPages(segs, CONTENT_MAX_H), [segs]);
 
   return (
-    <div ref={containerRef} className="space-y-4">
+    <div className="space-y-4">
       {pages.map((pageSegs, pi) => (
         <div
           key={pi}
